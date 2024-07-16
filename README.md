@@ -358,7 +358,7 @@ Then we create the spring service :
 
 `kuebctl apply -f spring-svc.yaml`
 
-Finally we can test our project with Postman putting the ip of the worker node we have deploy or app on and the node-port IP of the spring service, for me it's **http://192.168.100.11:32271**
+Finally, we can test our project with Postman by entering the IP address of the worker node where our app is deployed, along with the NodePort IP of the Spring service. For example, mine is **http://192.168.100.11:32271**
 
 ![add user](https://github.com/user-attachments/assets/953ff276-d5ec-4bc2-b0e5-00c1e9363cf1)
 
