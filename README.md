@@ -142,9 +142,9 @@ Create a service account named **vault-auth**
 
 
 ##  Create MYSQL deployment and  the spring boot deployment with secrets injection
-Now we have to move to deployments directory 
+Now we have to move to app-deploys directory 
 
-`cd deployments`
+`cd app-deploys`
 
 Then we have to create the mysql deployment with the latest docker image available (mysql-deploy.yaml)
 
