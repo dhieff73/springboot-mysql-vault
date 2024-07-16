@@ -141,7 +141,7 @@ Create a service account named **vault-auth**
 `kubectl create serviceaccount vault-auth`
 
 
-##  Create MYSQL deployment and  the spring boot deployment with secrets injection
+##  Create MYSQL  and  the spring boot deployments and services with secrets injection
 Now we have to move to app-deploys directory 
 
 `cd app-deploys`
@@ -149,6 +149,10 @@ Now we have to move to app-deploys directory
 Then we have to create the mysql deployment with the latest docker image available (mysql-deploy.yaml)
 
 `kubectl apply -f mysql-deploy.yaml`
+
+and create the service 
+
+` kubectl apply -f mysql-svc.yaml`
 
 When the MySQL pod is running normally ![mysql running](https://github.com/user-attachments/assets/fa8d8367-e4cf-4cc1-bb6b-160b4ad28d1b) 
  we can create our spring boot deployment with the injector annotations (spring-deploy.yaml) 
@@ -208,10 +212,18 @@ spec:
 
 Applying the file to create the deployment 
 
-`kubectl apply -f test.yaml` 
+`kubectl apply -f spring-deploy.yaml` 
+
+The we create the spring service : 
+
+`kuebctl apply -f spring-svc.yaml`
+
+Finally we can test our project with Postman putting the ip of the worker node we have deploy or app on and the node-port IP of the spring service, for me it's **http://192.168.100.11:32271**
+
+![add user](https://github.com/user-attachments/assets/953ff276-d5ec-4bc2-b0e5-00c1e9363cf1)
 
 
-
+![login with user](https://github.com/user-attachments/assets/b08d07d0-0d01-43cc-9efe-3819fe1f01a5)
 
 
 
