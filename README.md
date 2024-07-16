@@ -146,7 +146,7 @@ Create a service account named **vault-auth**
 ---
 
 
-##  Create MYSQL  and  the spring boot deployments and services with secrets injection
+##  Create MYSQL and the spring boot deployments and services with secrets injection
 Now we have to move to app-deploys directory 
 
 `cd app-deploys`
