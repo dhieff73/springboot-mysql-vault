@@ -6,8 +6,7 @@ This repository contains the necessary files and instructions to deploy a Spring
 #### [2. Clone the Repository](README.md)
 #### [3. Setup Vault](README.md) 
 #### [4. Setup Vault Agent Injector and create secrets (database config)](README.md) 
-#### [5. Build and Push Docker Image](README.md)
-#### [6. create the spring boot deployment with secrets injection](README.md) 
+#### [5. Create MYSQL deployment and  the spring boot deployment with secrets injection](README.md) 
 
 
 
@@ -116,6 +115,7 @@ path "kv/data/dev/apps/spring" {
 }
 EOH
 `
+
 Activate kubernetes authentification: 
 
 ` vault auth enable kubernetes`
@@ -139,6 +139,76 @@ Create a vault role with the name **webapp**:
 Create a service account named **vault-auth** 
 
 `kubectl create serviceaccount vault-auth`
+
+
+##  Create MYSQL deployment and  the spring boot deployment with secrets injection
+Now we have to move to deployments directory 
+
+`cd deployments`
+
+Then we have to create the mysql deployment with the latest docker image available (mysql-deploy.yaml)
+
+`kubectl apply -f mysql-deploy.yaml`
+
+When the MySQL pod is running normally ![mysql running](https://github.com/user-attachments/assets/fa8d8367-e4cf-4cc1-bb6b-160b4ad28d1b) 
+ we can create our spring boot deployment with the injector annotations (spring-deploy.yaml) 
+
+ this is the content of the deployment yaml file : 
+
+
+
+## spring-deploy.yaml
+
+
+
+
+``` yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-kube-app
+  labels:
+    app: spring-kube-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-kube-app
+  template:
+    metadata:
+      labels:
+        app: spring-kube-app
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/role: 'webapp'
+        vault.hashicorp.com/agent-pre-populate-only: 'true'
+        vault.hashicorp.com/agent-inject-secret-database-config: 'kv/dev/apps/spring'
+        # Environment variable export template
+        vault.hashicorp.com/agent-inject-template-database-config: |
+          {{ with secret "kv/dev/apps/spring" -}}
+            export MYSQL_HOST="{{ .Data.data.MYSQL_HOST }}"
+            export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
+            export MYSQL_PORT="{{ .Data.data.MYSQL_PORT }}"
+            export MYSQL_DATABASE="{{ .Data.data.MYSQL_DATABASE }}"
+            export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
+          {{- end }}
+    spec:
+      serviceAccountName: vault-auth
+      containers:
+        - name: spring-kube-app
+          image: khalil73/spring-kube  # Replace with your Docker image name
+          command:
+            ['sh', '-c']
+          args:
+            ['source /vault/secrets/database-config && java -jar /app.jar']
+          ports:
+            - containerPort: 8089  # Port your Spring Boot app listens on inside the container
+
+```
+
+Applying the file to create the deployment 
+
+`kubectl apply -f test.yaml` 
 
 
 
