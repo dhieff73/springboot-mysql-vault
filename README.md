@@ -2,21 +2,23 @@
 This repository contains the necessary files and instructions to deploy a Spring Boot application with MySQL on a Kubernetes cluster. The database configuration is managed as secrets in Vault and injected into the Spring Boot pod.
 
 ## Table of contents
-#### [1. Prerequisites](README.md)
-#### [2. Clone the Repository](README.md)
-#### [3. Setup Vault](README.md) 
-#### [4. Setup Vault Agent Injector and create secrets (database config)](README.md) 
-#### [5. Create MYSQL deployment and  the spring boot deployment with secrets injection](README.md) 
-
-
+1. [Prerequisites](#prerequisites)
+2. [Clone the Repository](#clone-the-repository)
+3. [Setup Vault](#setup-vault)
+4. [Setup Vault Agent Injector and Create Secrets (Database Config)](#setup-vault-agent-injector-and-create-secrets-database-config)
+5. [Create MYSQL  and  the spring boot deployments and services with secrets injection](#create-MYSQL-and-the-spring-boot-deployments-and-services-with-secrets-injection)
+---
 
 ## Prerequisites
 - kuberentes cluster
 - docker
 
+---
 
 ## Clone the Repository
 `git clone https://github.com/dhieff73/springboot-mysql-vault.git`
+
+---
 
 ## Setup Vault 
 First you must to change dircetory to vault-manifests 
@@ -74,6 +76,7 @@ The result must look like this:
 Since we have created a service on NodePort 32000, we will be able to access the Vault user interface using any of the nodes' IP addresses on port 32000. You can use the saved token to log in to the user interface.
 ![image](https://github.com/user-attachments/assets/71262211-a15c-4c20-b689-8f6243ad69bd)
 
+---
 
 ## Setup Vault Agent Injector and create secrets (database config)
 
@@ -139,6 +142,8 @@ Create a vault role with the name **webapp**:
 Create a service account named **vault-auth** 
 
 `kubectl create serviceaccount vault-auth`
+
+---
 
 
 ##  Create MYSQL  and  the spring boot deployments and services with secrets injection
@@ -210,11 +215,146 @@ spec:
 
 ```
 
-Applying the file to create the deployment 
+For the deployment of our Spring Boot application, I've set up a Jenkins pipeline that fetches the code from GitLab, runs tests and code analysis, builds a Docker image, and pushes it to Docker Hub. This image is then downloaded to our Spring Boot service. 
+
+This is the script of the jenkins pipeline : 
+
+## Jenkins pipeline 
+
+``` groovy
+pipeline {
+    agent any 
+    
+      environment {
+        KUBECONFIG = credentials('kubeconfig_id')
+    }
+    tools {
+        maven "M2_HOME"
+        jdk "JAVA_HOME"
+    }
+    stages {
+        
+         
+
+        
+        
+        stage('Fetch code') {
+            steps {
+                git branch: 'main',
+                credentialsId: 'fa500f0a-c585-42c9-8a1d-5cc5f8b8b104',
+                url: 'https://gitlab.com/dhieff.14/springkube.git'
+            }
+        }
+      
+                
+        
+ 
+                
+        stage('Maven clean') {
+            steps {
+                script {
+                    def repoPath = "LoginKube"
+                    sh "cd ${repoPath} && mvn clean"
+                }
+            }
+        }
+
+        stage('Maven package and finalizing') {
+            steps {
+                script {
+                    def repoPath = "LoginKube"
+                    sh "cd ${repoPath} && mvn package"
+                }
+            }
+        }
+        
+        
+                
+                stage('Code Quality Check via SonarQube') {
+                    steps {
+                        script {
+                            dir('LoginKube') {
+                                withSonarQubeEnv(credentialsId: 'jenkins_token', installationName: 'sonar') {
+                                    sh 'mvn sonar:sonar'
+                                }
+                            }
+                        }
+                    }
+        
+                    
+                }
+
+        stage('Build Docker Image') {
+            steps {
+            script {
+                def repoPath = "LoginKube"
+                def imageName = "khalil73/spring-kube:latest"
+                sh "cd ${repoPath} && docker build -t ${imageName} ."
+                }
+            }
+        }
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    def imageName = "khalil73/spring-kube:latest"
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub_id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh "docker login -u ${DOCKERHUB_USERNAME} -p ${DOCKERHUB_PASSWORD}"
+                    }
+                    sh "docker push ${imageName}"
+                }
+            }
+        }
+        stage('Test Kubernetes Connection') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'kubeconfig_id', variable: 'KUBECONFIG_FILE')]) {
+                        writeFile file: 'test-k8s-connection.sh', text: '''
+                        #!/bin/bash
+                        export KUBECONFIG=${KUBECONFIG_FILE}
+                        kubectl get nodes
+                        result=$?
+                        if [ $result -ne 0 ]; then
+                            echo "Failed to connect to Kubernetes cluster"
+                            exit $result
+                        else
+                            echo "Successfully connected to Kubernetes cluster"
+                        fi
+                        '''
+                        sh 'chmod +x test-k8s-connection.sh'
+                        sh './test-k8s-connection.sh'
+                    }
+                }
+            }
+        }
+        
+        
+        
+         stage('Apply Kubernetes Deployment') {
+             steps {
+                withCredentials([string(credentialsId: 'vagrant-ssh-password', variable: 'SSHPASS')]) {
+                    sh '''
+                            sshpass -p "$SSHPASS" ssh -o StrictHostKeyChecking=no vagrant@192.168.100.10 << EOF 
+                            cd
+                            ls
+                            cd deployments 
+                            ls
+                            sudo kubectl apply -f test.yaml
+                        '''
+                }}
+        }
+        
+        
+        
+        
+}
+}
+``` 
+
+To make this step manually you can apply the deployment yaml file with a simple command 
 
 `kubectl apply -f spring-deploy.yaml` 
 
-The we create the spring service : 
+Then we create the spring service : 
 
 `kuebctl apply -f spring-svc.yaml`
 
