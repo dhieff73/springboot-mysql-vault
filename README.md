@@ -6,7 +6,7 @@ This repository contains the necessary files and instructions to deploy a Spring
 2. [Clone the Repository](#clone-the-repository)
 3. [Setup Vault](#setup-vault)
 4. [Setup Vault Agent Injector and Create Secrets (Database Config)](#setup-vault-agent-injector-and-create-secrets-database-config)
-5. [Create MYSQL  and  the spring boot deployments and services with secrets injection](#create-MYSQL-and-the-spring-boot-deployments-and-services-with-secrets-injection)
+5. [Create MYSQL  and  the spring boot deployments and services with secrets injection](#create-mysql-and-the-spring-boot-deployments-and-services-with-secrets-injection)
 ---
 
 ## Prerequisites
