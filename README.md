@@ -48,7 +48,7 @@ The publishNotReadyAddresses option changes this behavior by including pods that
 
 #### Create vault deployment 
 
-`kubectl aaply -f vault-deploy.yaml`
+`kubectl apply -f vault-deploy.yaml`
 
 #### Unseal and initialize vault 
 Creation of tokens and keys to start using Vault.
