@@ -33,8 +33,7 @@ spec:
         - name: home
           emptyDir: {}
         - name: data
-          persistentVolumeClaim:
-            claimName: vault-data-pvc  # Use the PVC created earlier
+          emptyDir: {}  # Example: Replace with actual volume configuration if needed
       containers:
         - name: vault
           image: hashicorp/vault:1.8.0
@@ -85,4 +84,3 @@ spec:
               name: https-internal
             - containerPort: 8202
               name: http-rep
-
